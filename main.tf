@@ -76,3 +76,36 @@ resource "aws_internet_gateway" "main" {
 }
 
 # -- -- #
+
+# -- Route tables -- #
+
+# the important part that tells us which subnet is private and which public
+# routes traffic 
+
+# - Public - #
+
+resource "aws_route_table" "public" { # attached to the VPC, on its own only has automatic local route
+    vpc_id = aws_vpc.main.id
+
+    tags = { Name = "trijo-adijo-rtable-pub" }
+}
+
+resource "aws_route" "public_internet" {
+    route_table_id         = aws_route_table.public.id
+    destination_cidr_block = "0.0.0.0/0" # any address anywhere -> makes this subnet public 
+    gateway_id             = aws_internet_gateway.main.id
+}
+
+resource "aws_route_table_association" "public_a" {
+    subnet_id      = aws_subnet.public_a.id
+    route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "public_b" {
+    subnet_id      = aws_subnet.public_b.id
+    route_table_id = aws_route_table.public.id
+}
+
+# - - #
+
+# -- -- #
