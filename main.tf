@@ -1,6 +1,6 @@
 # This file holds the actual infra
 
-resource "aws_vpc" "main" { # tagged with main for now change later if needed
+resource "aws_vpc" "main" { # named main for now change later if needed
     cidr_block = "10.0.0.0/16"
 
     # The following are there to make the VPC's internal DNS work
