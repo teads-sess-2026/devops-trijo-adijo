@@ -18,8 +18,10 @@ resource "aws_vpc" "main" { # named main for now change later if needed
 
 # -- AWS subnets -> 2 x public, 2 x private -- #
 
+# Chose the following rules :
 # public subnets get .0 and .1 
 # private subnets get .10 and .11
+# (Same as pdf pg 5/6)
 
 resource "aws_subnet" "public_a" {
     vpc_id = aws_vpc.main.id # Reference that wires the subnet to the vpc
@@ -59,6 +61,16 @@ resource "aws_subnet" "private_b" {
     availability_zone = "eu-west-1b"
 
     tags = { Name = "trijo-adijo-private-b" }
+}
+
+# -- -- #
+
+# -- Internet gateway -- #
+
+resource "aws_internet_gateway" "main" {
+    vpc_id = aws_vpc.main.id
+
+    tags = { Name = "trijo-adijo-gate" }
 }
 
 # -- -- #
