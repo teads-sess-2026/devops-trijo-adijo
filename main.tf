@@ -1,5 +1,7 @@
 # This file holds the actual infra
 
+# -- AWS vpc -- #
+
 resource "aws_vpc" "main" { # named main for now change later if needed
     cidr_block = "10.0.0.0/16"
 
@@ -11,3 +13,15 @@ resource "aws_vpc" "main" { # named main for now change later if needed
 
     tags = { Name = "trijo-adijo"}
 }
+
+# -- -- #
+
+# -- AWS subnets -> 2 x public, 2 x private -- #
+
+resource "aws_subnet" "public_a" {
+    vpc_id = aws_vpc.main.id
+    cidr_block = "10.0.0.0/24"
+    availability_zone = "eu-west-1a"
+}
+
+# -- -- #
