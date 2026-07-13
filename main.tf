@@ -67,6 +67,8 @@ resource "aws_subnet" "private_b" {
 
 # -- Internet gateway -- #
 
+# wo-way internet access, plus 1:1 NAT
+
 resource "aws_internet_gateway" "main" {
     vpc_id = aws_vpc.main.id
 
