@@ -24,6 +24,7 @@ resource "aws_vpc" "main" { # named main for now change later if needed
 # (Same as pdf pg 5/6)
 
 resource "aws_subnet" "public_a" {
+
     vpc_id = aws_vpc.main.id # Reference that wires the subnet to the vpc
     
     cidr_block = "10.0.0.0/24" # public so it gets .0
@@ -106,6 +107,42 @@ resource "aws_route_table_association" "public_b" {
     route_table_id = aws_route_table.public.id
 }
 
-# - - #
+# --- NAT networking --- #
+resource "aws_eip" "nat" {
+    domain = "vpc"
 
-# -- -- #
+    tags = { Name = "trijo-adijo-nat-eip" }
+}
+
+# Single NAT in public_a — both private subnets route through it
+# Trade-off: cheaper but AZ-a failure takes down outbound for AZ-b too
+resource "aws_nat_gateway" "main" {
+    allocation_id = aws_eip.nat.id
+    subnet_id     = aws_subnet.public_a.id
+
+    tags = { Name = "trijo-adijo-nat" }
+
+    depends_on = [aws_internet_gateway.main]
+}
+
+resource "aws_route_table" "private" {
+    vpc_id = aws_vpc.main.id
+
+    tags = { Name = "trijo-adijo-rtable-priv" }
+}
+
+resource "aws_route" "private_nat" {
+    route_table_id         = aws_route_table.private.id
+    destination_cidr_block = "0.0.0.0/0"
+    nat_gateway_id         = aws_nat_gateway.main.id
+}
+
+resource "aws_route_table_association" "private_a" {
+    subnet_id      = aws_subnet.private_a.id
+    route_table_id = aws_route_table.private.id
+}
+
+resource "aws_route_table_association" "private_b" {
+    subnet_id      = aws_subnet.private_b.id
+    route_table_id = aws_route_table.private.id
+}
