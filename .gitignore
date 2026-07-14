@@ -3,3 +3,5 @@ terraform.tfstate
 .terraform
 terraform.tfstate.backup
 *.tfvars
+terraform.exe
+LICENSE.txt
