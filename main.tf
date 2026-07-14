@@ -26,12 +26,21 @@ resource "aws_vpc" "main" { # named main for now change later if needed
 resource "aws_subnet" "public_a" {
 
     vpc_id = aws_vpc.main.id # Reference that wires the subnet to the vpc
-    
+
     cidr_block = "10.0.0.0/24" # public so it gets .0
-    
+
     availability_zone = "eu-west-1a" # Which building it is on
 
-    tags = { Name = "trijo-adijo-public-a" }
+    tags = {
+        Name = "trijo-adijo-public-a"
+
+        # EKS uses this tag to discover subnets when provisioning internet-facing load balancers.
+        # "shared" means multiple clusters could use this subnet (vs "owned" = this cluster alone).
+        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+
+        # Tells the AWS load balancer controller to use this subnet for public (internet-facing) ELBs.
+        "kubernetes.io/role/elb" = "1"
+    }
 }
 
 resource "aws_subnet" "private_a" {
@@ -41,27 +50,44 @@ resource "aws_subnet" "private_a" {
 
     availability_zone = "eu-west-1a"
 
-    tags = { Name = "trijo-adijo-private-a" }
+    tags = {
+        Name = "trijo-adijo-private-a"
+
+        # Same cluster discovery tag as public subnets.
+        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+
+        # Tells the load balancer controller to use this subnet for internal (private) ELBs.
+        # Worker nodes themselves also live here.
+        "kubernetes.io/role/internal-elb" = "1"
+    }
 }
 
 resource "aws_subnet" "public_b" {
     vpc_id = aws_vpc.main.id
 
-    cidr_block = "10.0.1.0/24" 
+    cidr_block = "10.0.1.0/24"
 
     availability_zone = "eu-west-1b"
 
-    tags = { Name = "trijo-adijo-public-b" }
+    tags = {
+        Name = "trijo-adijo-public-b"
+        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+        "kubernetes.io/role/elb"                    = "1"
+    }
 }
 
 resource "aws_subnet" "private_b" {
     vpc_id = aws_vpc.main.id
 
-    cidr_block = "10.0.11.0/24" 
+    cidr_block = "10.0.11.0/24"
 
     availability_zone = "eu-west-1b"
 
-    tags = { Name = "trijo-adijo-private-b" }
+    tags = {
+        Name = "trijo-adijo-private-b"
+        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+        "kubernetes.io/role/internal-elb"           = "1"
+    }
 }
 
 # -- -- #
