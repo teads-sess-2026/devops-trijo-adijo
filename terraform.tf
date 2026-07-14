@@ -13,10 +13,10 @@ terraform {
 		}
 	}
 	backend "s3" {
-		bucket       = "trijo-adijo-tfstate"
-		key          = "vpc-eks/terraform.tfstate"
-		region       = "eu-west-1"
-		encrypt      = true
+		bucket = "trijo-adijo-tfstate"
+		key = "vpc-eks/terraform.tfstate"
+		region = "eu-west-1"
+		encrypt = true
 		use_lockfile = true   # native S3 locking (Terraform 1.11+, DynamoDB ni potreben)
   	}
 	required_version = ">= 1.15" # Minimum required version is 1.15
@@ -26,7 +26,7 @@ terraform {
 ## -- Provider config block -- ##
 
 provider "aws" {
-  region  = "eu-west-1"
+  region = "eu-west-1"
   profile = "summer-school"
 }
 
