@@ -5,3 +5,10 @@ terraform.tfstate.backup
 *.tfvars
 terraform.exe
 LICENSE.txt
+
+# Python (app/)
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
