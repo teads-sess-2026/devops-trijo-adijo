@@ -1,11 +1,5 @@
-variable "cluster_name" {
-  description = "EKS cluster name — used for subnet discovery tags"
+variable "team_name" {
+  description = "team name - always tag resources with this"
   type        = string
   default     = "trijo-adijo"
-}
-
-variable "vpc_cidr" {
-  description = "CIDR block for the VPC"
-  type        = string
-  default     = "10.0.0.0/16"
 }
