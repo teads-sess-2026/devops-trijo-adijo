@@ -11,7 +11,7 @@ resource "aws_vpc" "main" { # named main for now change later if needed
     enable_dns_support = true # defaults to true
     enable_dns_hostnames = true # defaults to false 
 
-    tags = { Name = "trijo-adijo"}
+    tags = { Name = "${var.team_name}" }
 }
 
 # -- -- #
@@ -32,11 +32,11 @@ resource "aws_subnet" "public_a" {
     availability_zone = "eu-west-1a" # Which building it is on
 
     tags = {
-        Name = "trijo-adijo-public-a"
+        Name = "${var.team_name}-public-a"
 
         # EKS uses this tag to discover subnets when provisioning internet-facing load balancers.
         # "shared" means multiple clusters could use this subnet (vs "owned" = this cluster alone).
-        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+        "kubernetes.io/cluster/${var.team_name}" = "shared"
 
         # Tells the AWS load balancer controller to use this subnet for public (internet-facing) ELBs.
         "kubernetes.io/role/elb" = "1"
@@ -51,10 +51,10 @@ resource "aws_subnet" "private_a" {
     availability_zone = "eu-west-1a"
 
     tags = {
-        Name = "trijo-adijo-private-a"
+        Name = "${var.team_name}-private-a"
 
         # Same cluster discovery tag as public subnets.
-        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+        "kubernetes.io/cluster/${var.team_name}" = "shared"
 
         # Tells the load balancer controller to use this subnet for internal (private) ELBs.
         # Worker nodes themselves also live here.
@@ -70,8 +70,8 @@ resource "aws_subnet" "public_b" {
     availability_zone = "eu-west-1b"
 
     tags = {
-        Name = "trijo-adijo-public-b"
-        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+        Name = "${var.team_name}-public-b"
+        "kubernetes.io/cluster/${var.team_name}" = "shared"
         "kubernetes.io/role/elb"                    = "1"
     }
 }
@@ -84,8 +84,8 @@ resource "aws_subnet" "private_b" {
     availability_zone = "eu-west-1b"
 
     tags = {
-        Name = "trijo-adijo-private-b"
-        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+        Name = "${var.team_name}-private-b"
+        "kubernetes.io/cluster/${var.team_name}" = "shared"
         "kubernetes.io/role/internal-elb"           = "1"
     }
 }
@@ -99,7 +99,7 @@ resource "aws_subnet" "private_b" {
 resource "aws_internet_gateway" "main" {
     vpc_id = aws_vpc.main.id
 
-    tags = { Name = "trijo-adijo-gate" }
+    tags = { Name = "${var.team_name}-gate" }
 }
 
 # -- -- #
@@ -114,7 +114,7 @@ resource "aws_internet_gateway" "main" {
 resource "aws_route_table" "public" { # attached to the VPC, on its own only has automatic local route
     vpc_id = aws_vpc.main.id
 
-    tags = { Name = "trijo-adijo-rtable-pub" }
+    tags = { Name = "${var.team_name}-rtable-pub" }
 }
 
 resource "aws_route" "public_internet" {
@@ -137,7 +137,7 @@ resource "aws_route_table_association" "public_b" {
 resource "aws_eip" "nat" {
     domain = "vpc"
 
-    tags = { Name = "trijo-adijo-nat-eip" }
+    tags = { Name = "${var.team_name}-nat-eip" }
 }
 
 # Single NAT in public_a — both private subnets route through it
@@ -146,7 +146,7 @@ resource "aws_nat_gateway" "main" {
     allocation_id = aws_eip.nat.id
     subnet_id     = aws_subnet.public_a.id
 
-    tags = { Name = "trijo-adijo-nat" }
+    tags = { Name = "${var.team_name}-nat" }
 
     depends_on = [aws_internet_gateway.main]
 }
@@ -154,7 +154,7 @@ resource "aws_nat_gateway" "main" {
 resource "aws_route_table" "private" {
     vpc_id = aws_vpc.main.id
 
-    tags = { Name = "trijo-adijo-rtable-priv" }
+    tags = { Name = "${var.team_name}-rtable-priv" }
 }
 
 resource "aws_route" "private_nat" {
