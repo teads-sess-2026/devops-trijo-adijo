@@ -17,7 +17,7 @@ data "aws_iam_policy_document" "eks_cluster_assume" {
 }
 
 resource "aws_iam_role" "eks_cluster" {
-    name = "trijo-adijo-eks-cluster-role"
+    name = "${var.cluster_name}-role"
     assume_role_policy = data.aws_iam_policy_document.eks_cluster_assume.json
     permissions_boundary = "arn:aws:iam::937697200280:policy/summer-school-ljubljana-boundary"
 }
@@ -34,7 +34,7 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
 # -- EKS cluster (control plane) -- #
 
 resource "aws_eks_cluster" "main" {
-    name = "${var.team_name}-eks-cluster"
+    name = var.cluster_name
     role_arn = aws_iam_role.eks_cluster.arn
 
     version = "1.36"
@@ -52,7 +52,7 @@ resource "aws_eks_cluster" "main" {
         aws_iam_role_policy_attachment.eks_cluster_policy
     ]
 
-    tags = { Name = "${var.team_name}-eks-cluster" }
+    tags = { Name = var.cluster_name }
 }
 
 # -- -- #
@@ -81,7 +81,7 @@ data "aws_iam_policy_document" "eks_node_assume" {
 }
 
 resource "aws_iam_role" "eks_node" {
-    name = "${var.team_name}-eks-node-role"
+    name = "${var.cluster_name}-node-role"
     assume_role_policy = data.aws_iam_policy_document.eks_node_assume.json
 
     # Same boundary as the cluster role — required by the account's permission policy.
@@ -122,7 +122,7 @@ resource "aws_iam_role_policy_attachment" "eks_ecr_read" {
 
 resource "aws_eks_node_group" "main" {
     cluster_name    = aws_eks_cluster.main.name
-    node_group_name = "${var.team_name}-nodes"
+    node_group_name = "${var.cluster_name}-nodes"
     node_role_arn   = aws_iam_role.eks_node.arn
 
     # Private subnets only — worker nodes have no business being directly
@@ -152,7 +152,7 @@ resource "aws_eks_node_group" "main" {
         aws_iam_role_policy_attachment.eks_ecr_read,
     ]
 
-    tags = { Name = "${var.team_name}-nodes" }
+    tags = { Name = "${var.cluster_name}-nodes" }
 }
 
 # -- -- #
