@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ping
+  labels:
+    app: ping
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ping
+  template:
+    metadata:
+      labels:
+        app: ping
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+      containers:
+        - name: ping
+          image: 937697200280.dkr.ecr.eu-west-1.amazonaws.com/trijo-adijo/ping:v1
+          ports:
+            - containerPort: 8000
+          env:
+            - name: REDIS_URL
+              value: "redis://redis:6379/0"
+            - name: ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ping-admin
+                  key: admin-token
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: PUBLIC_URL
+              value: "http://a5119c57be7a54fdc9bc104052a284ef-1290957200.eu-west-1.elb.amazonaws.com"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ping
+  labels:
+    app: ping
+spec:
+  type: LoadBalancer
+  selector:
+    app: ping
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000

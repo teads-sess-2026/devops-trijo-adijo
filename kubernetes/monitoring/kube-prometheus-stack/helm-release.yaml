@@ -19,7 +19,12 @@ spec:
   values:
     grafana:
       enabled: true
-    prometheus:
-      enabled: true
     alertmanager:
       enabled: true
+    prometheus:
+      enabled: true
+      prometheusSpec:
+        # Adopt ServiceMonitors/PodMonitors in any namespace regardless of the
+        # Helm release label, so our own ping ServiceMonitor is picked up.
+        serviceMonitorSelectorNilUsesHelmValues: false
+        podMonitorSelectorNilUsesHelmValues: false
