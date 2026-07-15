@@ -31,12 +31,14 @@ resource "aws_subnet" "public_a" {
 
     availability_zone = "eu-west-1a" # Which building it is on
 
+    map_public_ip_on_launch = true
+
     tags = {
         Name = "${var.team_name}-public-a"
 
         # EKS uses this tag to discover subnets when provisioning internet-facing load balancers.
         # "shared" means multiple clusters could use this subnet (vs "owned" = this cluster alone).
-        "kubernetes.io/cluster/${var.team_name}" = "shared"
+        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
 
         # Tells the AWS load balancer controller to use this subnet for public (internet-facing) ELBs.
         "kubernetes.io/role/elb" = "1"
@@ -54,7 +56,7 @@ resource "aws_subnet" "private_a" {
         Name = "${var.team_name}-private-a"
 
         # Same cluster discovery tag as public subnets.
-        "kubernetes.io/cluster/${var.team_name}" = "shared"
+        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
 
         # Tells the load balancer controller to use this subnet for internal (private) ELBs.
         # Worker nodes themselves also live here.
@@ -69,9 +71,11 @@ resource "aws_subnet" "public_b" {
 
     availability_zone = "eu-west-1b"
 
+    map_public_ip_on_launch = true
+
     tags = {
         Name = "${var.team_name}-public-b"
-        "kubernetes.io/cluster/${var.team_name}" = "shared"
+        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
         "kubernetes.io/role/elb"                    = "1"
     }
 }
@@ -85,7 +89,7 @@ resource "aws_subnet" "private_b" {
 
     tags = {
         Name = "${var.team_name}-private-b"
-        "kubernetes.io/cluster/${var.team_name}" = "shared"
+        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
         "kubernetes.io/role/internal-elb"           = "1"
     }
 }
