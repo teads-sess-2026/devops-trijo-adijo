@@ -27,6 +27,8 @@ label{font-size:12px;color:var(--muted);display:block;margin:10px 0 3px}
 .big{width:100%;padding:26px;font-size:22px;font-weight:700;background:var(--accent);color:#fff}
 .stop{background:var(--bad);color:#fff}.ghost{background:#21262d;color:var(--fg)}
 .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px}
+@keyframes pulse{0%{background:#1f6feb33}100%{background:transparent}}
+.row.new{animation:pulse .6s ease-out}
 """
 
 
@@ -60,21 +62,37 @@ def dashboard(qr_svg: str, mobile_url: str) -> str:
   </div>
 </div>
 <div class="card" style="margin-top:14px">
-  <div class="l">Live feed — request &rarr; pod that served it</div>
+  <div class="row" style="border:0;padding:0"><div class="l">Live feed — request &rarr; pod that served it</div>
+  <button class="ghost" id="sound" onclick="toggleSound()" style="width:auto;padding:6px 12px;font-size:13px">🔊 Sound: off</button></div>
   <div class="feed" id="feed"></div>
 </div>
 <div class="sub" style="margin-top:14px">This dashboard is served by pod <span class="pod" id="me">?</span> · <a href="/admin">admin load test</a></div>
 </div>
 <script>
 const $=id=>document.getElementById(id);
+function hashPod(p){{let h=2166136261;for(let i=0;i<p.length;i++){{h^=p.charCodeAt(i);h=Math.imul(h,16777619);}}return Math.abs(h)%360;}}
+function colorFor(p){{return `hsl(${{hashPod(p)}},70%,60%)`;}}
+let audioCtx=null,soundOn=false;
+function blip(pod){{
+  if(!soundOn||!audioCtx)return;
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.frequency.value=330+hashPod(pod)/360*440;o.connect(g);g.connect(audioCtx.destination);
+  g.gain.setValueAtTime(0.06,audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+0.12);
+  o.start();o.stop(audioCtx.currentTime+0.12);
+}}
+function toggleSound(){{
+  if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  soundOn=!soundOn;$('sound').textContent=soundOn?'🔊 Sound: on':'🔊 Sound: off';
+}}
 function fmtPods(pods,activeMap){{
   const entries=Object.entries(pods).sort((a,b)=>b[1]-a[1]);
   const max=Math.max(1,...entries.map(e=>e[1]));
   $('pods').innerHTML=entries.map(([p,c])=>{{
     const on=activeMap[p]!==false;
-    const op=on?1:0.35;const tag=on?'':' · idle';
-    return `<div style="margin-top:8px;opacity:${{op}}"><div class="row"><span class="pod">${{p}}${{tag}}</span><span>${{c}}</span></div>`+
-      `<div class="bar"><span style="width:${{Math.round(100*c/max)}}%"></span></div></div>`;
+    const op=on?1:0.35;const tag=on?'':' · idle';const col=colorFor(p);
+    return `<div style="margin-top:8px;opacity:${{op}}"><div class="row"><span class="pod" style="color:${{col}}">${{p}}${{tag}}</span><span>${{c}}</span></div>`+
+      `<div class="bar"><span style="width:${{Math.round(100*c/max)}}%;background:${{col}}"></span></div></div>`;
   }}).join('')||'<div class="sub">no traffic yet</div>';
 }}
 function fmtBoard(b){{
@@ -92,13 +110,14 @@ function onStats(s){{
   fmtBoard(s.leaderboard||[]);
 }}
 function onPing(e){{
-  const feed=$('feed');const d=document.createElement('div');d.className='row';
-  const cls=e.status>=400?'err':(e.source==='loadtest'?'lt':'pod');
+  const feed=$('feed');const d=document.createElement('div');d.className='row new';
   const t=new Date(e.ts*1000).toLocaleTimeString();
   const who=e.nick||e.session||'';
+  const podcol=e.status>=400?'var(--bad)':colorFor(e.pod);
   d.innerHTML=`<span>#${{e.seq}} · ${{t}} · ${{e.source}}${{who?' · '+who:''}}</span>`+
-    `<span class="${{cls}}">${{e.pod}} · ${{e.latency_ms}}ms · ${{e.status}}</span>`;
+    `<span style="color:${{podcol}}">${{e.pod}} · ${{e.latency_ms}}ms · ${{e.status}}</span>`;
   feed.prepend(d);while(feed.childNodes.length>120)feed.removeChild(feed.lastChild);
+  blip(e.pod);
 }}
 const es=new EventSource('/events');
 es.addEventListener('stats',ev=>onStats(JSON.parse(ev.data)));
