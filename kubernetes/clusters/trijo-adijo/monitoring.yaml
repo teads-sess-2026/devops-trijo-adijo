@@ -1,0 +1,36 @@
+---
+# Installs the kube-prometheus-stack (Prometheus, Grafana, Alertmanager) and its
+# HelmRepository. wait:true blocks until the HelmRelease is healthy so the CRDs
+# (ServiceMonitor, etc.) exist before the configs Kustomization below runs.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: monitoring-controllers
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  retryInterval: 2m0s
+  timeout: 10m0s
+  wait: true
+  prune: true
+  path: ./kubernetes/monitoring/kube-prometheus-stack
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+---
+# ServiceMonitors and other config that depend on the CRDs above being present.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: monitoring-configs
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  retryInterval: 2m0s
+  prune: true
+  dependsOn:
+    - name: monitoring-controllers
+  path: ./kubernetes/monitoring/monitors
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

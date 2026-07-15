@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ping
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  # The ping Service lives in the default namespace, not here.
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      app: ping
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
