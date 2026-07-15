@@ -3,31 +3,42 @@ inline so the app has no third-party dependencies at runtime and works behind a
 plain ALB with no egress."""
 
 _STYLE = """
-:root{--bg:#0e1116;--card:#1a1f29;--fg:#e6edf3;--muted:#8b949e;--accent:#2f81f7;
---good:#3fb950;--bad:#f85149;--warn:#d29922}
+:root{--bg:#0b0e17;--card:#161b28;--card2:#1b2233;--fg:#eef2f8;--muted:#93a0b4;
+--accent:#5b7cff;--accent2:#a039c2;--good:#3fb950;--bad:#f85149;--warn:#d29922;
+--line:#242c3d;--grad:linear-gradient(90deg,#ff8963,#ff52a1,#a039c2,#674dd2,#2b78e3,#09a8f5)}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-background:var(--bg);color:var(--fg)}
-.wrap{max-width:1100px;margin:0 auto;padding:20px}
-h1{font-size:20px;margin:0 0 4px}.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+background:radial-gradient(1200px 620px at 50% -12%,#18203a 0,var(--bg) 58%);color:var(--fg);
+min-height:100vh;border-top:4px solid transparent;border-image:var(--grad) 1}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 20px}
+h1{font-size:23px;margin:0 0 4px;font-weight:800;letter-spacing:-.01em;
+background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
 .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
-.card{background:var(--card);border:1px solid #262c36;border-radius:10px;padding:16px}
-.tile .n{font-size:30px;font-weight:700}.tile .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);
+border-radius:14px;padding:16px;box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 10px 26px rgba(0,0,0,.28)}
+.tile .n{font-size:32px;font-weight:800;letter-spacing:-.02em}
+.tile .l{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
 .two{display:grid;gap:14px;grid-template-columns:1fr 1fr;margin-top:14px}
 @media(max-width:760px){.two{grid-template-columns:1fr}}
-.feed{height:280px;overflow:auto;font-family:ui-monospace,Menlo,monospace;font-size:12px}
-.row{padding:3px 0;border-bottom:1px solid #21262d;display:flex;gap:8px;justify-content:space-between}
+.feed{height:280px;overflow:auto;font-family:ui-monospace,Menlo,monospace;font-size:12px;margin-top:8px}
+.row{padding:4px 0;border-bottom:1px solid var(--line);display:flex;gap:8px;justify-content:space-between}
 .pod{color:var(--accent)}.err{color:var(--bad)}.lt{color:var(--warn)}
-.bar{height:10px;background:#21262d;border-radius:5px;overflow:hidden;margin-top:4px}
-.bar>span{display:block;height:100%;background:var(--accent)}
-.qr{background:#fff;padding:12px;border-radius:10px;display:inline-block}
-a{color:var(--accent)}
-button{font-size:15px;border:0;border-radius:8px;padding:12px 16px;cursor:pointer}
-input{background:#0e1116;color:var(--fg);border:1px solid #30363d;border-radius:6px;padding:8px;width:100%}
+.bar{height:10px;background:#0e1320;border-radius:6px;overflow:hidden;margin-top:5px}
+.bar>span{display:block;height:100%;background:var(--grad)}
+.qr{background:#fff;padding:12px;border-radius:12px;display:inline-block}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+button{font-size:15px;border:0;border-radius:10px;padding:12px 16px;cursor:pointer;color:#fff;
+transition:transform .05s ease,filter .15s ease}
+button:hover{filter:brightness(1.08)}button:active{transform:translateY(1px)}
+button:disabled{opacity:.5;cursor:default}
+input{background:#0c1017;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px;width:100%}
+input:focus{outline:0;border-color:var(--accent)}
 label{font-size:12px;color:var(--muted);display:block;margin:10px 0 3px}
-.big{width:100%;padding:26px;font-size:22px;font-weight:700;background:var(--accent);color:#fff}
-.stop{background:var(--bad);color:#fff}.ghost{background:#21262d;color:var(--fg)}
+.big{width:100%;padding:26px;font-size:22px;font-weight:800;background:var(--grad);color:#fff;
+box-shadow:0 6px 20px rgba(103,77,210,.35)}
+.stop{background:var(--bad)}.ghost{background:#20293a;color:var(--fg);border:1px solid var(--line)}
 .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px}
-@keyframes pulse{0%{background:#1f6feb33}100%{background:transparent}}
+@keyframes pulse{0%{background:#5b7cff33}100%{background:transparent}}
 .row.new{animation:pulse .6s ease-out}
 """
 
