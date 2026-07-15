@@ -11,6 +11,7 @@ spec:
   groups:
     - name: pingapp
       rules:
+        # Fires when a target EXISTS but scraping fails.
         - alert: PingTargetDown
           expr: up{job="ping"} == 0
           for: 2m
@@ -19,6 +20,16 @@ spec:
           annotations:
             summary: "Ping target down ({{ $labels.instance }})"
             description: "Prometheus has been unable to scrape ping target {{ $labels.instance }} for 2m."
+        # Fires when NO targets exist at all (e.g. scaled to 0 / all pods gone),
+        # which up==0 above cannot catch because the series disappears entirely.
+        - alert: PingAllTargetsGone
+          expr: absent(up{job="ping"})
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "No ping targets are being scraped"
+            description: "Prometheus sees zero ping targets for 2m (deployment scaled to 0 or Service/ServiceMonitor broken)."
         - alert: PingHighErrorRatio
           expr: sum(rate(pingapp_errors_total[5m])) / sum(rate(pingapp_pings_total[5m])) > 0.05
           for: 5m
