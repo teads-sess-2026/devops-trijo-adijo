@@ -1,0 +1,37 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: pingapp-rules
+  namespace: monitoring
+  labels:
+    # Required for the Prometheus operator to adopt the rule (unlike our
+    # ServiceMonitor, rule adoption is not opened up in the HelmRelease values).
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: pingapp
+      rules:
+        - alert: PingTargetDown
+          expr: up{job="ping"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Ping target down ({{ $labels.instance }})"
+            description: "Prometheus has been unable to scrape ping target {{ $labels.instance }} for 2m."
+        - alert: PingHighErrorRatio
+          expr: sum(rate(pingapp_errors_total[5m])) / sum(rate(pingapp_pings_total[5m])) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High ping error ratio"
+            description: "Error ratio is {{ $value | humanizePercentage }} over the last 5m (threshold 5%)."
+        - alert: PingHighLatencyP95
+          expr: histogram_quantile(0.95, sum by (le) (rate(pingapp_request_latency_seconds_bucket[5m]))) > 0.5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High ping p95 latency"
+            description: "p95 request latency is {{ $value }}s over the last 5m (threshold 0.5s)."
