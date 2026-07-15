@@ -3,30 +3,43 @@ inline so the app has no third-party dependencies at runtime and works behind a
 plain ALB with no egress."""
 
 _STYLE = """
-:root{--bg:#0e1116;--card:#1a1f29;--fg:#e6edf3;--muted:#8b949e;--accent:#2f81f7;
---good:#3fb950;--bad:#f85149;--warn:#d29922}
+:root{--bg:#0b0e17;--card:#161b28;--card2:#1b2233;--fg:#eef2f8;--muted:#93a0b4;
+--accent:#5b7cff;--accent2:#a039c2;--good:#3fb950;--bad:#f85149;--warn:#d29922;
+--line:#242c3d;--grad:linear-gradient(90deg,#ff8963,#ff52a1,#a039c2,#674dd2,#2b78e3,#09a8f5)}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-background:var(--bg);color:var(--fg)}
-.wrap{max-width:1100px;margin:0 auto;padding:20px}
-h1{font-size:20px;margin:0 0 4px}.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+background:radial-gradient(1200px 620px at 50% -12%,#18203a 0,var(--bg) 58%);color:var(--fg);
+min-height:100vh;border-top:4px solid transparent;border-image:var(--grad) 1}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 20px}
+h1{font-size:23px;margin:0 0 4px;font-weight:800;letter-spacing:-.01em;
+background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
 .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
-.card{background:var(--card);border:1px solid #262c36;border-radius:10px;padding:16px}
-.tile .n{font-size:30px;font-weight:700}.tile .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);
+border-radius:14px;padding:16px;box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 10px 26px rgba(0,0,0,.28)}
+.tile .n{font-size:32px;font-weight:800;letter-spacing:-.02em}
+.tile .l{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
 .two{display:grid;gap:14px;grid-template-columns:1fr 1fr;margin-top:14px}
 @media(max-width:760px){.two{grid-template-columns:1fr}}
-.feed{height:280px;overflow:auto;font-family:ui-monospace,Menlo,monospace;font-size:12px}
-.row{padding:3px 0;border-bottom:1px solid #21262d;display:flex;gap:8px;justify-content:space-between}
+.feed{height:280px;overflow:auto;font-family:ui-monospace,Menlo,monospace;font-size:12px;margin-top:8px}
+.row{padding:4px 0;border-bottom:1px solid var(--line);display:flex;gap:8px;justify-content:space-between}
 .pod{color:var(--accent)}.err{color:var(--bad)}.lt{color:var(--warn)}
-.bar{height:10px;background:#21262d;border-radius:5px;overflow:hidden;margin-top:4px}
-.bar>span{display:block;height:100%;background:var(--accent)}
-.qr{background:#fff;padding:12px;border-radius:10px;display:inline-block}
-a{color:var(--accent)}
-button{font-size:15px;border:0;border-radius:8px;padding:12px 16px;cursor:pointer}
-input{background:#0e1116;color:var(--fg);border:1px solid #30363d;border-radius:6px;padding:8px;width:100%}
+.bar{height:10px;background:#0e1320;border-radius:6px;overflow:hidden;margin-top:5px}
+.bar>span{display:block;height:100%;background:var(--grad)}
+.qr{background:#fff;padding:12px;border-radius:12px;display:inline-block}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+button{font-size:15px;border:0;border-radius:10px;padding:12px 16px;cursor:pointer;color:#fff;
+transition:transform .05s ease,filter .15s ease}
+button:hover{filter:brightness(1.08)}button:active{transform:translateY(1px)}
+button:disabled{opacity:.5;cursor:default}
+input{background:#0c1017;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px;width:100%}
+input:focus{outline:0;border-color:var(--accent)}
 label{font-size:12px;color:var(--muted);display:block;margin:10px 0 3px}
-.big{width:100%;padding:26px;font-size:22px;font-weight:700;background:var(--accent);color:#fff}
-.stop{background:var(--bad);color:#fff}.ghost{background:#21262d;color:var(--fg)}
+.big{width:100%;padding:26px;font-size:22px;font-weight:800;background:var(--grad);color:#fff;
+box-shadow:0 6px 20px rgba(103,77,210,.35)}
+.stop{background:var(--bad)}.ghost{background:#20293a;color:var(--fg);border:1px solid var(--line)}
 .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px}
+@keyframes pulse{0%{background:#5b7cff33}100%{background:transparent}}
+.row.new{animation:pulse .6s ease-out}
 """
 
 
@@ -46,6 +59,7 @@ def dashboard(qr_svg: str, mobile_url: str) -> str:
       <div class="card tile"><div class="n" id="total">0</div><div class="l">Total pings</div></div>
       <div class="card tile"><div class="n" id="pps">0</div><div class="l">Pings / sec</div></div>
       <div class="card tile"><div class="n" id="sessions">0</div><div class="l">Active phones</div></div>
+      <div class="card tile"><div class="n" id="activepods">0</div><div class="l">Active pods</div></div>
       <div class="card tile"><div class="n" id="p50">0</div><div class="l">p50 ms</div></div>
       <div class="card tile"><div class="n" id="p95">0</div><div class="l">p95 ms</div></div>
       <div class="card tile"><div class="n err" id="errors">0</div><div class="l">Errors</div></div>
@@ -53,36 +67,68 @@ def dashboard(qr_svg: str, mobile_url: str) -> str:
     <div class="card" style="margin-top:14px">
       <div class="l">Requests per pod</div><div id="pods"></div>
     </div>
+    <div class="card" style="margin-top:14px">
+      <div class="l">Leaderboard — most pings</div><div id="board"></div>
+    </div>
   </div>
 </div>
 <div class="card" style="margin-top:14px">
-  <div class="l">Live feed — request &rarr; pod that served it</div>
+  <div class="row" style="border:0;padding:0"><div class="l">Live feed — request &rarr; pod that served it</div>
+  <button class="ghost" id="sound" onclick="toggleSound()" style="width:auto;padding:6px 12px;font-size:13px">🔊 Sound: off</button></div>
   <div class="feed" id="feed"></div>
 </div>
 <div class="sub" style="margin-top:14px">This dashboard is served by pod <span class="pod" id="me">?</span> · <a href="/admin">admin load test</a></div>
 </div>
 <script>
 const $=id=>document.getElementById(id);
-function fmtPods(pods){{
+function hashPod(p){{let h=2166136261;for(let i=0;i<p.length;i++){{h^=p.charCodeAt(i);h=Math.imul(h,16777619);}}return Math.abs(h)%360;}}
+function colorFor(p){{return `hsl(${{hashPod(p)}},70%,60%)`;}}
+let audioCtx=null,soundOn=false;
+function blip(pod){{
+  if(!soundOn||!audioCtx)return;
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.frequency.value=330+hashPod(pod)/360*440;o.connect(g);g.connect(audioCtx.destination);
+  g.gain.setValueAtTime(0.06,audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+0.12);
+  o.start();o.stop(audioCtx.currentTime+0.12);
+}}
+function toggleSound(){{
+  if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  soundOn=!soundOn;$('sound').textContent=soundOn?'🔊 Sound: on':'🔊 Sound: off';
+}}
+function fmtPods(pods,activeMap){{
   const entries=Object.entries(pods).sort((a,b)=>b[1]-a[1]);
   const max=Math.max(1,...entries.map(e=>e[1]));
-  $('pods').innerHTML=entries.map(([p,c])=>
-    `<div style="margin-top:8px"><div class="row"><span class="pod">${{p}}</span><span>${{c}}</span></div>`+
-    `<div class="bar"><span style="width:${{Math.round(100*c/max)}}%"></span></div></div>`).join('')||'<div class="sub">no traffic yet</div>';
+  $('pods').innerHTML=entries.map(([p,c])=>{{
+    const on=activeMap[p]!==false;
+    const op=on?1:0.35;const tag=on?'':' · idle';const col=colorFor(p);
+    return `<div style="margin-top:8px;opacity:${{op}}"><div class="row"><span class="pod" style="color:${{col}}">${{p}}${{tag}}</span><span>${{c}}</span></div>`+
+      `<div class="bar"><span style="width:${{Math.round(100*c/max)}}%;background:${{col}}"></span></div></div>`;
+  }}).join('')||'<div class="sub">no traffic yet</div>';
+}}
+function fmtBoard(b){{
+  if(!b||!b.length){{$('board').innerHTML='<div class="sub">no pings yet</div>';return;}}
+  const medals=['🥇','🥈','🥉'];
+  $('board').innerHTML=b.map((e,i)=>
+    `<div class="row"><span>${{medals[i]||('#'+(i+1))}} ${{e.name}}</span><span class="pod">${{e.count}}</span></div>`).join('');
 }}
 function onStats(s){{
   $('total').textContent=s.total;$('pps').textContent=s.pings_per_second;
   $('sessions').textContent=s.active_sessions;$('p50').textContent=s.p50_ms;
   $('p95').textContent=s.p95_ms;$('errors').textContent=s.errors;$('me').textContent=s.serving_pod;
-  fmtPods(s.pods||{{}});
+  $('activepods').textContent=s.active_pods||0;
+  fmtPods(s.pods||{{}},s.pod_active||{{}});
+  fmtBoard(s.leaderboard||[]);
 }}
 function onPing(e){{
-  const feed=$('feed');const d=document.createElement('div');d.className='row';
-  const cls=e.status>=400?'err':(e.source==='loadtest'?'lt':'pod');
+  const feed=$('feed');const d=document.createElement('div');d.className='row new';
   const t=new Date(e.ts*1000).toLocaleTimeString();
-  d.innerHTML=`<span>#${{e.seq}} · ${{t}} · ${{e.source}}</span>`+
-    `<span class="${{cls}}">${{e.pod}} · ${{e.latency_ms}}ms · ${{e.status}}</span>`;
+  const who=e.nick||e.session||'';
+  const podcol=e.status>=400?'var(--bad)':colorFor(e.pod);
+  d.innerHTML=`<span>#${{e.seq}} · ${{t}} · ${{e.source}}${{who?' · '+who:''}}</span>`+
+    `<span style="color:${{podcol}}">${{e.pod}} · ${{e.latency_ms}}ms · ${{e.status}}</span>`;
   feed.prepend(d);while(feed.childNodes.length>120)feed.removeChild(feed.lastChild);
+  blip(e.pod);
 }}
 const es=new EventSource('/events');
 es.addEventListener('stats',ev=>onStats(JSON.parse(ev.data)));
@@ -98,7 +144,20 @@ def mobile() -> str:
 </style></head><body><div class="wrap">
 <h1>Send a Ping</h1>
 <div class="sub">Each tap hits the backend and shows which pod answered.</div>
+<div class="card" style="margin-bottom:14px;text-align:left">
+  <label>Your name (shows on the big screen)</label>
+  <div style="display:flex;gap:8px">
+    <input id="nick" placeholder="e.g. Loti" maxlength="24">
+    <button class="ghost" id="savenick" style="width:auto;white-space:nowrap">Save</button>
+  </div>
+</div>
 <button class="big" id="btn">Send Ping</button>
+<div class="grid" style="margin-top:12px;grid-template-columns:repeat(3,1fr)">
+  <button class="ghost" id="b10">+10</button>
+  <button class="ghost" id="b25">+25</button>
+  <button class="ghost" id="b100">+100</button>
+</div>
+<div class="sub" id="burststatus" style="margin-top:8px">&nbsp;</div>
 <div class="grid" style="margin-top:20px">
   <div class="card tile"><div class="n" id="mine">0</div><div class="l">Your pings</div></div>
   <div class="card tile"><div class="n" id="lat">–</div><div class="l">Last latency ms</div></div>
@@ -121,6 +180,36 @@ async function ping(){{
   busy=false;$('btn').disabled=false;
 }}
 $('btn').addEventListener('click',ping);
+async function sendOne(){{
+  try{{
+    const r=await fetch('/ping?session='+sid,{{method:'POST'}});
+    const j=await r.json();mine++;
+    $('mine').textContent=mine;$('lat').textContent=j.latency_ms;$('pod').textContent=j.pod;
+  }}catch(e){{$('pod').textContent='error';}}
+}}
+async function burst(n){{
+  const btns=[$('b10'),$('b25'),$('b100'),$('btn')];
+  btns.forEach(b=>b.disabled=true);
+  const batch=10;let done=0;
+  for(let i=0;i<n;i+=batch){{
+    const k=Math.min(batch,n-i);
+    await Promise.all(Array.from({{length:k}},()=>sendOne()));
+    done+=k;$('burststatus').textContent='sent '+done+' / '+n;
+  }}
+  $('burststatus').textContent='done — sent '+n;
+  btns.forEach(b=>b.disabled=false);
+}}
+$('b10').addEventListener('click',()=>burst(10));
+$('b25').addEventListener('click',()=>burst(25));
+$('b100').addEventListener('click',()=>burst(100));
+$('nick').value=localStorage.getItem('pingnick')||'';
+async function saveNick(){{
+  const name=$('nick').value.trim();
+  localStorage.setItem('pingnick',name);
+  try{{await fetch('/name?session='+sid+'&name='+encodeURIComponent(name),{{method:'POST'}});}}catch(e){{}}
+}}
+$('savenick').addEventListener('click',saveNick);
+if($('nick').value)saveNick();
 // heartbeat so the phone stays counted as an active session
 setInterval(()=>fetch('/heartbeat?session='+sid,{{method:'POST'}}).catch(()=>{{}}),10000);
 </script></body></html>"""
@@ -148,6 +237,10 @@ def admin() -> str:
 <div class="card" style="margin-top:14px">
   <div class="l">Status</div><pre id="status" style="white-space:pre-wrap;margin:6px 0 0">idle</pre>
 </div>
+<div class="card" style="margin-top:14px">
+  <div class="l">Leaderboard</div>
+  <button class="ghost" id="resetlb" style="margin-top:8px">Reset leaderboard</button>
+</div>
 <div class="sub" style="margin-top:10px"><a href="/">back to dashboard</a></div>
 </div>
 <script>
@@ -166,6 +259,7 @@ function render(j,ok){{
 $('start').onclick=()=>call('/admin/loadtest/start',{{rate:+$('rate').value,concurrency:+$('conc').value,duration:+$('dur').value}});
 $('stop').onclick=()=>call('/admin/loadtest/stop');
 $('estop').onclick=()=>call('/admin/loadtest/emergency-stop');
+$('resetlb').onclick=()=>call('/admin/leaderboard/reset');
 async function poll(){{
   try{{const r=await fetch('/admin/loadtest/status');render(await r.json(),true);}}catch(e){{}}
 }}

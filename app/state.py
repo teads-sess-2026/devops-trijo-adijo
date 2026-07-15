@@ -18,13 +18,18 @@ from config import REDIS_URL, SESSION_TTL_SECONDS, POD_NAME
 K_TOTAL = "ping:total"
 K_ERRORS = "ping:errors"
 K_PODS = "ping:pods"            # hash pod -> count
+K_POD_SEEN = "ping:pods_seen"   # hash pod -> last-seen epoch (liveness)
 K_RECENT = "ping:recent"        # zset member -> epoch (for rate)
 K_LATENCIES = "ping:latencies"  # capped list of recent latency ms
 K_SESSIONS = "sess:active"      # zset session_id -> last-seen epoch
+K_NICKS = "sess:nicks"          # hash session_id -> display name
+K_LEADERBOARD = "ping:board"    # zset session_id -> ping count (phones only)
 CHANNEL = "ping:events"         # pub/sub live feed
 
 _LATENCY_SAMPLE = 500           # how many recent latencies to keep for percentiles
 _RATE_WINDOW = 5.0              # seconds used to compute pings/sec
+_POD_ACTIVE_WINDOW = 15.0       # a pod is "active" if it served within this many seconds
+_POD_PRUNE_SECONDS = 300.0      # drop a pod from the panel after this long with no traffic
 
 _redis: aioredis.Redis | None = None
 
@@ -47,6 +52,32 @@ async def touch_session(session_id: str) -> None:
     await r().zadd(K_SESSIONS, {session_id: time.time()})
 
 
+async def set_nick(session_id: str, name: str) -> None:
+    """Set (or clear) a phone's display name, shown in the live feed."""
+    if not session_id:
+        return
+    name = (name or "").strip()[:24]
+    if name:
+        await r().hset(K_NICKS, session_id, name)
+    else:
+        await r().hdel(K_NICKS, session_id)
+
+
+async def get_leaderboard(n: int = 8) -> list[dict]:
+    """Top phones by ping count, resolved to display names where set."""
+    top = await r().zrevrange(K_LEADERBOARD, 0, n - 1, withscores=True)
+    if not top:
+        return []
+    nicks = await r().hmget(K_NICKS, [m for m, _ in top])
+    return [{"name": nick or m[:8], "count": int(score)}
+            for (m, score), nick in zip(top, nicks)]
+
+
+async def reset_leaderboard() -> None:
+    """Clear the leaderboard (admin, e.g. between demo runs)."""
+    await r().delete(K_LEADERBOARD)
+
+
 async def record_ping(t0: float, source: str, session_id: str, status: int) -> dict:
     """Register one handled ping: update counters, feed, session, publish event.
 
@@ -61,10 +92,12 @@ async def record_ping(t0: float, source: str, session_id: str, status: int) -> d
     if is_error:
         pipe.incr(K_ERRORS)
     pipe.hincrby(K_PODS, POD_NAME, 1)
+    pipe.hset(K_POD_SEEN, POD_NAME, now)
     pipe.zadd(K_RECENT, {f"{now}:{uuid.uuid4().hex[:8]}": now})
     pipe.zremrangebyscore(K_RECENT, 0, now - 60)
     if session_id:
         pipe.zadd(K_SESSIONS, {session_id: now})
+        pipe.zincrby(K_LEADERBOARD, 1, session_id)
     results = await pipe.execute()
     total = results[0]
 
@@ -74,6 +107,7 @@ async def record_ping(t0: float, source: str, session_id: str, status: int) -> d
     lat_pipe.ltrim(K_LATENCIES, 0, _LATENCY_SAMPLE - 1)
     await lat_pipe.execute()
 
+    nick = await r().hget(K_NICKS, session_id) if session_id else None
     event = {
         "ts": now,
         "pod": POD_NAME,
@@ -81,6 +115,7 @@ async def record_ping(t0: float, source: str, session_id: str, status: int) -> d
         "latency_ms": round(latency_ms, 1),
         "status": status,
         "session": session_id[:8] if session_id else None,
+        "nick": nick,
         "seq": total,
     }
     await r().publish(CHANNEL, json.dumps(event))
@@ -104,9 +139,29 @@ async def get_stats() -> dict:
     pipe.zcount(K_RECENT, now - _RATE_WINDOW, now)
     pipe.lrange(K_LATENCIES, 0, _LATENCY_SAMPLE - 1)
     pipe.hgetall(K_PODS)
-    total, errors, _, active, recent_count, latencies, pods = await pipe.execute()
+    pipe.hgetall(K_POD_SEEN)
+    total, errors, _, active, recent_count, latencies, pods, pods_seen = await pipe.execute()
+
+    # Decide which pods are alive. "active" = served within _POD_ACTIVE_WINDOW.
+    # Pods idle beyond _POD_PRUNE_SECONDS are dropped from the panel and cleaned
+    # out of Redis, so scaled-down pods fade and then disappear (no ghosts).
+    seen = {k: float(v) for k, v in (pods_seen or {}).items()}
+    kept_counts: dict[str, int] = {}
+    pod_active: dict[str, bool] = {}
+    stale: list[str] = []
+    for pod, count in (pods or {}).items():
+        idle = now - seen.get(pod, 0.0)
+        if idle > _POD_PRUNE_SECONDS:
+            stale.append(pod)
+            continue
+        kept_counts[pod] = int(count)
+        pod_active[pod] = idle <= _POD_ACTIVE_WINDOW
+    if stale:
+        await r().hdel(K_PODS, *stale)
+        await r().hdel(K_POD_SEEN, *stale)
 
     lat = sorted(float(x) for x in latencies) if latencies else []
+    board = await get_leaderboard()
     return {
         "total": int(total or 0),
         "errors": int(errors or 0),
@@ -114,7 +169,10 @@ async def get_stats() -> dict:
         "active_sessions": int(active or 0),
         "p50_ms": round(_percentile(lat, 50), 1),
         "p95_ms": round(_percentile(lat, 95), 1),
-        "pods": {k: int(v) for k, v in (pods or {}).items()},
+        "pods": kept_counts,
+        "pod_active": pod_active,
+        "active_pods": sum(1 for a in pod_active.values() if a),
+        "leaderboard": board,
         "serving_pod": POD_NAME,
     }
 

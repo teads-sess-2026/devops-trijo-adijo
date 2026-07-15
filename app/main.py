@@ -124,6 +124,12 @@ async def heartbeat(session: str = ""):
     return {"ok": True}
 
 
+@app.post("/name")
+async def set_name(session: str = "", name: str = ""):
+    await state.set_nick(session, name)
+    return {"ok": True}
+
+
 @app.get("/stats")
 async def stats():
     return await state.get_stats()
@@ -202,6 +208,13 @@ async def lt_estop(authorization: str | None = Header(None)):
 @app.get("/admin/loadtest/status")
 async def lt_status():
     return await tester.status()
+
+
+@app.post("/admin/leaderboard/reset")
+async def leaderboard_reset(authorization: str | None = Header(None)):
+    _require_admin(authorization)
+    await state.reset_leaderboard()
+    return {"ok": True}
 
 
 # --- Health ---
