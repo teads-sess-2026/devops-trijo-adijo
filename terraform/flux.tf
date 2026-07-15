@@ -6,7 +6,7 @@
 # Also doing all of this this way so that if someone deletes the kube-prometheus-stack FLUX installs it automatically
 
 resource "flux_bootstrap_git" "main" {
-  path = "kubernetes/clusters/trijo-adijo"
+  path       = "kubernetes/clusters/trijo-adijo"
   depends_on = [aws_eks_node_group.main]
 }
 
