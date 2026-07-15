@@ -50,3 +50,17 @@ jobs:
         run: terraform init -backend=false
       - name: Validate
         run: terraform validate
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
+            | tar -xz kubeconform
+          sudo mv kubeconform /usr/local/bin/
+      - name: Validate Kubernetes manifests
+        run: |
+          kubeconform -summary -ignore-missing-schemas \
+            -kubernetes-version 1.30.0 \
+            k8s/ kubernetes/
