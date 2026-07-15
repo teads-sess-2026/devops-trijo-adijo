@@ -5,7 +5,7 @@ metadata:
   labels:
     app: ping
 spec:
-  replicas: 2
+  replicas: 6
   selector:
     matchLabels:
       app: ping
@@ -14,6 +14,16 @@ spec:
       labels:
         app: ping
     spec:
+      # Spread pods evenly across AZs (aim for 3 + 3). ScheduleAnyway keeps it a
+      # *preference*: if a zone/node is lost, the pods are allowed to pile onto
+      # the surviving zone instead of getting stuck Pending.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: ping
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
