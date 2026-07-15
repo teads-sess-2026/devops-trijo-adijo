@@ -29,7 +29,7 @@ spec:
         runAsUser: 10001
       containers:
         - name: ping
-          image: 937697200280.dkr.ecr.eu-west-1.amazonaws.com/trijo-adijo/ping:v1
+          image: 937697200280.dkr.ecr.eu-west-1.amazonaws.com/trijo-adijo/ping:v2
           ports:
             - containerPort: 8000
           env:
