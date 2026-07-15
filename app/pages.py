@@ -99,6 +99,12 @@ def mobile() -> str:
 <h1>Send a Ping</h1>
 <div class="sub">Each tap hits the backend and shows which pod answered.</div>
 <button class="big" id="btn">Send Ping</button>
+<div class="grid" style="margin-top:12px;grid-template-columns:repeat(3,1fr)">
+  <button class="ghost" id="b10">+10</button>
+  <button class="ghost" id="b25">+25</button>
+  <button class="ghost" id="b100">+100</button>
+</div>
+<div class="sub" id="burststatus" style="margin-top:8px">&nbsp;</div>
 <div class="grid" style="margin-top:20px">
   <div class="card tile"><div class="n" id="mine">0</div><div class="l">Your pings</div></div>
   <div class="card tile"><div class="n" id="lat">–</div><div class="l">Last latency ms</div></div>
@@ -121,6 +127,28 @@ async function ping(){{
   busy=false;$('btn').disabled=false;
 }}
 $('btn').addEventListener('click',ping);
+async function sendOne(){{
+  try{{
+    const r=await fetch('/ping?session='+sid,{{method:'POST'}});
+    const j=await r.json();mine++;
+    $('mine').textContent=mine;$('lat').textContent=j.latency_ms;$('pod').textContent=j.pod;
+  }}catch(e){{$('pod').textContent='error';}}
+}}
+async function burst(n){{
+  const btns=[$('b10'),$('b25'),$('b100'),$('btn')];
+  btns.forEach(b=>b.disabled=true);
+  const batch=10;let done=0;
+  for(let i=0;i<n;i+=batch){{
+    const k=Math.min(batch,n-i);
+    await Promise.all(Array.from({{length:k}},()=>sendOne()));
+    done+=k;$('burststatus').textContent='sent '+done+' / '+n;
+  }}
+  $('burststatus').textContent='done — sent '+n;
+  btns.forEach(b=>b.disabled=false);
+}}
+$('b10').addEventListener('click',()=>burst(10));
+$('b25').addEventListener('click',()=>burst(25));
+$('b100').addEventListener('click',()=>burst(100));
 // heartbeat so the phone stays counted as an active session
 setInterval(()=>fetch('/heartbeat?session='+sid,{{method:'POST'}}).catch(()=>{{}}),10000);
 </script></body></html>"""
