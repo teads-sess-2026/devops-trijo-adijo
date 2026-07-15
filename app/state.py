@@ -22,6 +22,7 @@ K_POD_SEEN = "ping:pods_seen"   # hash pod -> last-seen epoch (liveness)
 K_RECENT = "ping:recent"        # zset member -> epoch (for rate)
 K_LATENCIES = "ping:latencies"  # capped list of recent latency ms
 K_SESSIONS = "sess:active"      # zset session_id -> last-seen epoch
+K_NICKS = "sess:nicks"          # hash session_id -> display name
 CHANNEL = "ping:events"         # pub/sub live feed
 
 _LATENCY_SAMPLE = 500           # how many recent latencies to keep for percentiles
@@ -48,6 +49,17 @@ async def touch_session(session_id: str) -> None:
     if not session_id:
         return
     await r().zadd(K_SESSIONS, {session_id: time.time()})
+
+
+async def set_nick(session_id: str, name: str) -> None:
+    """Set (or clear) a phone's display name, shown in the live feed."""
+    if not session_id:
+        return
+    name = (name or "").strip()[:24]
+    if name:
+        await r().hset(K_NICKS, session_id, name)
+    else:
+        await r().hdel(K_NICKS, session_id)
 
 
 async def record_ping(t0: float, source: str, session_id: str, status: int) -> dict:
@@ -78,6 +90,7 @@ async def record_ping(t0: float, source: str, session_id: str, status: int) -> d
     lat_pipe.ltrim(K_LATENCIES, 0, _LATENCY_SAMPLE - 1)
     await lat_pipe.execute()
 
+    nick = await r().hget(K_NICKS, session_id) if session_id else None
     event = {
         "ts": now,
         "pod": POD_NAME,
@@ -85,6 +98,7 @@ async def record_ping(t0: float, source: str, session_id: str, status: int) -> d
         "latency_ms": round(latency_ms, 1),
         "status": status,
         "session": session_id[:8] if session_id else None,
+        "nick": nick,
         "seq": total,
     }
     await r().publish(CHANNEL, json.dumps(event))

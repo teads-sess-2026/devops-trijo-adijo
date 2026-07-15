@@ -124,6 +124,12 @@ async def heartbeat(session: str = ""):
     return {"ok": True}
 
 
+@app.post("/name")
+async def set_name(session: str = "", name: str = ""):
+    await state.set_nick(session, name)
+    return {"ok": True}
+
+
 @app.get("/stats")
 async def stats():
     return await state.get_stats()

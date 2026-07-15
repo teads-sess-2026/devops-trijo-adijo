@@ -85,7 +85,8 @@ function onPing(e){{
   const feed=$('feed');const d=document.createElement('div');d.className='row';
   const cls=e.status>=400?'err':(e.source==='loadtest'?'lt':'pod');
   const t=new Date(e.ts*1000).toLocaleTimeString();
-  d.innerHTML=`<span>#${{e.seq}} · ${{t}} · ${{e.source}}</span>`+
+  const who=e.nick||e.session||'';
+  d.innerHTML=`<span>#${{e.seq}} · ${{t}} · ${{e.source}}${{who?' · '+who:''}}</span>`+
     `<span class="${{cls}}">${{e.pod}} · ${{e.latency_ms}}ms · ${{e.status}}</span>`;
   feed.prepend(d);while(feed.childNodes.length>120)feed.removeChild(feed.lastChild);
 }}
@@ -103,6 +104,13 @@ def mobile() -> str:
 </style></head><body><div class="wrap">
 <h1>Send a Ping</h1>
 <div class="sub">Each tap hits the backend and shows which pod answered.</div>
+<div class="card" style="margin-bottom:14px;text-align:left">
+  <label>Your name (shows on the big screen)</label>
+  <div style="display:flex;gap:8px">
+    <input id="nick" placeholder="e.g. Loti" maxlength="24">
+    <button class="ghost" id="savenick" style="width:auto;white-space:nowrap">Save</button>
+  </div>
+</div>
 <button class="big" id="btn">Send Ping</button>
 <div class="grid" style="margin-top:12px;grid-template-columns:repeat(3,1fr)">
   <button class="ghost" id="b10">+10</button>
@@ -154,6 +162,14 @@ async function burst(n){{
 $('b10').addEventListener('click',()=>burst(10));
 $('b25').addEventListener('click',()=>burst(25));
 $('b100').addEventListener('click',()=>burst(100));
+$('nick').value=localStorage.getItem('pingnick')||'';
+async function saveNick(){{
+  const name=$('nick').value.trim();
+  localStorage.setItem('pingnick',name);
+  try{{await fetch('/name?session='+sid+'&name='+encodeURIComponent(name),{{method:'POST'}});}}catch(e){{}}
+}}
+$('savenick').addEventListener('click',saveNick);
+if($('nick').value)saveNick();
 // heartbeat so the phone stays counted as an active session
 setInterval(()=>fetch('/heartbeat?session='+sid,{{method:'POST'}}).catch(()=>{{}}),10000);
 </script></body></html>"""
