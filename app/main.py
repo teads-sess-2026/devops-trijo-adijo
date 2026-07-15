@@ -210,6 +210,13 @@ async def lt_status():
     return await tester.status()
 
 
+@app.post("/admin/leaderboard/reset")
+async def leaderboard_reset(authorization: str | None = Header(None)):
+    _require_admin(authorization)
+    await state.reset_leaderboard()
+    return {"ok": True}
+
+
 # --- Health ---
 @app.get("/healthz")
 async def healthz():

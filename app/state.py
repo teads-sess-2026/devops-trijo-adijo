@@ -23,6 +23,7 @@ K_RECENT = "ping:recent"        # zset member -> epoch (for rate)
 K_LATENCIES = "ping:latencies"  # capped list of recent latency ms
 K_SESSIONS = "sess:active"      # zset session_id -> last-seen epoch
 K_NICKS = "sess:nicks"          # hash session_id -> display name
+K_LEADERBOARD = "ping:board"    # zset session_id -> ping count (phones only)
 CHANNEL = "ping:events"         # pub/sub live feed
 
 _LATENCY_SAMPLE = 500           # how many recent latencies to keep for percentiles
@@ -62,6 +63,21 @@ async def set_nick(session_id: str, name: str) -> None:
         await r().hdel(K_NICKS, session_id)
 
 
+async def get_leaderboard(n: int = 8) -> list[dict]:
+    """Top phones by ping count, resolved to display names where set."""
+    top = await r().zrevrange(K_LEADERBOARD, 0, n - 1, withscores=True)
+    if not top:
+        return []
+    nicks = await r().hmget(K_NICKS, [m for m, _ in top])
+    return [{"name": nick or m[:8], "count": int(score)}
+            for (m, score), nick in zip(top, nicks)]
+
+
+async def reset_leaderboard() -> None:
+    """Clear the leaderboard (admin, e.g. between demo runs)."""
+    await r().delete(K_LEADERBOARD)
+
+
 async def record_ping(t0: float, source: str, session_id: str, status: int) -> dict:
     """Register one handled ping: update counters, feed, session, publish event.
 
@@ -81,6 +97,7 @@ async def record_ping(t0: float, source: str, session_id: str, status: int) -> d
     pipe.zremrangebyscore(K_RECENT, 0, now - 60)
     if session_id:
         pipe.zadd(K_SESSIONS, {session_id: now})
+        pipe.zincrby(K_LEADERBOARD, 1, session_id)
     results = await pipe.execute()
     total = results[0]
 
@@ -144,6 +161,7 @@ async def get_stats() -> dict:
         await r().hdel(K_POD_SEEN, *stale)
 
     lat = sorted(float(x) for x in latencies) if latencies else []
+    board = await get_leaderboard()
     return {
         "total": int(total or 0),
         "errors": int(errors or 0),
@@ -154,6 +172,7 @@ async def get_stats() -> dict:
         "pods": kept_counts,
         "pod_active": pod_active,
         "active_pods": sum(1 for a in pod_active.values() if a),
+        "leaderboard": board,
         "serving_pod": POD_NAME,
     }
 

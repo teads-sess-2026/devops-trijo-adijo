@@ -54,6 +54,9 @@ def dashboard(qr_svg: str, mobile_url: str) -> str:
     <div class="card" style="margin-top:14px">
       <div class="l">Requests per pod</div><div id="pods"></div>
     </div>
+    <div class="card" style="margin-top:14px">
+      <div class="l">Leaderboard — most pings</div><div id="board"></div>
+    </div>
   </div>
 </div>
 <div class="card" style="margin-top:14px">
@@ -74,12 +77,19 @@ function fmtPods(pods,activeMap){{
       `<div class="bar"><span style="width:${{Math.round(100*c/max)}}%"></span></div></div>`;
   }}).join('')||'<div class="sub">no traffic yet</div>';
 }}
+function fmtBoard(b){{
+  if(!b||!b.length){{$('board').innerHTML='<div class="sub">no pings yet</div>';return;}}
+  const medals=['🥇','🥈','🥉'];
+  $('board').innerHTML=b.map((e,i)=>
+    `<div class="row"><span>${{medals[i]||('#'+(i+1))}} ${{e.name}}</span><span class="pod">${{e.count}}</span></div>`).join('');
+}}
 function onStats(s){{
   $('total').textContent=s.total;$('pps').textContent=s.pings_per_second;
   $('sessions').textContent=s.active_sessions;$('p50').textContent=s.p50_ms;
   $('p95').textContent=s.p95_ms;$('errors').textContent=s.errors;$('me').textContent=s.serving_pod;
   $('activepods').textContent=s.active_pods||0;
   fmtPods(s.pods||{{}},s.pod_active||{{}});
+  fmtBoard(s.leaderboard||[]);
 }}
 function onPing(e){{
   const feed=$('feed');const d=document.createElement('div');d.className='row';
@@ -197,6 +207,10 @@ def admin() -> str:
 <div class="card" style="margin-top:14px">
   <div class="l">Status</div><pre id="status" style="white-space:pre-wrap;margin:6px 0 0">idle</pre>
 </div>
+<div class="card" style="margin-top:14px">
+  <div class="l">Leaderboard</div>
+  <button class="ghost" id="resetlb" style="margin-top:8px">Reset leaderboard</button>
+</div>
 <div class="sub" style="margin-top:10px"><a href="/">back to dashboard</a></div>
 </div>
 <script>
@@ -215,6 +229,7 @@ function render(j,ok){{
 $('start').onclick=()=>call('/admin/loadtest/start',{{rate:+$('rate').value,concurrency:+$('conc').value,duration:+$('dur').value}});
 $('stop').onclick=()=>call('/admin/loadtest/stop');
 $('estop').onclick=()=>call('/admin/loadtest/emergency-stop');
+$('resetlb').onclick=()=>call('/admin/leaderboard/reset');
 async function poll(){{
   try{{const r=await fetch('/admin/loadtest/status');render(await r.json(),true);}}catch(e){{}}
 }}
