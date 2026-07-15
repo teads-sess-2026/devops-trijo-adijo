@@ -46,6 +46,7 @@ def dashboard(qr_svg: str, mobile_url: str) -> str:
       <div class="card tile"><div class="n" id="total">0</div><div class="l">Total pings</div></div>
       <div class="card tile"><div class="n" id="pps">0</div><div class="l">Pings / sec</div></div>
       <div class="card tile"><div class="n" id="sessions">0</div><div class="l">Active phones</div></div>
+      <div class="card tile"><div class="n" id="activepods">0</div><div class="l">Active pods</div></div>
       <div class="card tile"><div class="n" id="p50">0</div><div class="l">p50 ms</div></div>
       <div class="card tile"><div class="n" id="p95">0</div><div class="l">p95 ms</div></div>
       <div class="card tile"><div class="n err" id="errors">0</div><div class="l">Errors</div></div>
@@ -63,18 +64,22 @@ def dashboard(qr_svg: str, mobile_url: str) -> str:
 </div>
 <script>
 const $=id=>document.getElementById(id);
-function fmtPods(pods){{
+function fmtPods(pods,activeMap){{
   const entries=Object.entries(pods).sort((a,b)=>b[1]-a[1]);
   const max=Math.max(1,...entries.map(e=>e[1]));
-  $('pods').innerHTML=entries.map(([p,c])=>
-    `<div style="margin-top:8px"><div class="row"><span class="pod">${{p}}</span><span>${{c}}</span></div>`+
-    `<div class="bar"><span style="width:${{Math.round(100*c/max)}}%"></span></div></div>`).join('')||'<div class="sub">no traffic yet</div>';
+  $('pods').innerHTML=entries.map(([p,c])=>{{
+    const on=activeMap[p]!==false;
+    const op=on?1:0.35;const tag=on?'':' · idle';
+    return `<div style="margin-top:8px;opacity:${{op}}"><div class="row"><span class="pod">${{p}}${{tag}}</span><span>${{c}}</span></div>`+
+      `<div class="bar"><span style="width:${{Math.round(100*c/max)}}%"></span></div></div>`;
+  }}).join('')||'<div class="sub">no traffic yet</div>';
 }}
 function onStats(s){{
   $('total').textContent=s.total;$('pps').textContent=s.pings_per_second;
   $('sessions').textContent=s.active_sessions;$('p50').textContent=s.p50_ms;
   $('p95').textContent=s.p95_ms;$('errors').textContent=s.errors;$('me').textContent=s.serving_pod;
-  fmtPods(s.pods||{{}});
+  $('activepods').textContent=s.active_pods||0;
+  fmtPods(s.pods||{{}},s.pod_active||{{}});
 }}
 function onPing(e){{
   const feed=$('feed');const d=document.createElement('div');d.className='row';
