@@ -9,3 +9,12 @@ variable "cluster_name" {
   type        = string
   default     = "trijo-adijo-eks-cluster"
 }
+
+variable "github_token" {
+  #read from environment variable GITHUB_TOKEN or if that doesnt work 
+  description = "GitHub personal access token with repo scope (used by Flux bootstrap)"
+  type        = string
+  default     = "trijo-adijo"
+  sensitive   = true
+}
+
