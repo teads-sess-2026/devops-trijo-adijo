@@ -11,6 +11,18 @@ terraform {
 			source = "hashicorp/aws"
 			version = "~> 6.0"	# Allow versions 6 -> 7
 		}
+		flux = {
+			source  = "fluxcd/flux"
+			version = "~> 1.4"
+		}
+		github = {
+			source  = "integrations/github"
+			version = "~> 6.0"
+		}
+		kubectl = {
+			source  = "gavinbunney/kubectl"
+			version = "~> 1.14"
+		}
 	}
 	backend "s3" {
 		bucket = "trijo-adijo-tfstate"
@@ -30,4 +42,28 @@ provider "aws" {
   profile = "summer-school"
 }
 
-## -- -- ##
+
+
+## -- Added this Alja -- ##
+
+provider "github" {
+  owner = "teads-sess-2026"
+  token = var.github_token
+}
+
+provider "flux" {
+  kubernetes = {
+    config_path = "~/.kube/config"
+  }
+  git = {
+    url = "https://github.com/teads-sess-2026/devops-trijo-adijo.git"
+    http = {
+      username = "git"
+      password = var.github_token
+    }
+  }
+}
+
+provider "kubectl" {
+  config_path = "~/.kube/config"
+}
